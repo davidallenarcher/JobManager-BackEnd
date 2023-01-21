@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.UnknownContentTypeException;
 
+import com.scorpionglitch.jobmanager.component.EmailService;
 import com.scorpionglitch.jobmanager.model.Job;
 import com.scorpionglitch.jobmanager.repository.JobManagerRepository;
 
@@ -26,6 +27,8 @@ import lombok.ToString;
 @Service
 @Configurable
 public class RockstarJobs {
+	@Autowired
+	EmailService emailService;
 
 	@Autowired
 	JobManagerRepository jobManagerRepository;
@@ -188,6 +191,7 @@ public class RockstarJobs {
 						if (jobFromDatabase == null) {
 							job.setDescription(getDesciption(rockstarJob.getId()));
 							jobManagerRepository.save(job);
+							emailService.sendJobEmail(job);
 						} else {
 							jobFromDatabase.setLastUpdated(null);
 							jobManagerRepository.save(jobFromDatabase);

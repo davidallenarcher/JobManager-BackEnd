@@ -19,3 +19,11 @@ spring:
 server:
   servlet:
     context-path: /api
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          client:
+            RestTemplate: DEBUG
+#            RestTemplate: INFO

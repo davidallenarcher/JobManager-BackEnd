@@ -13,12 +13,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.scorpionglitch.jobmanager.component.EmailService;
 import com.scorpionglitch.jobmanager.model.Job;
 import com.scorpionglitch.jobmanager.repository.JobManagerRepository;
 
 @Service
 @Configurable
 public class AtariJobs {
+	@Autowired
+	EmailService emailService;
 
 	@Autowired
 	JobManagerRepository jobManagerRepository;
@@ -51,6 +54,7 @@ public class AtariJobs {
 				Job jobFromDatabase = jobManagerRepository.findByLinkAddress(job.getLinkAddress());
 				if (jobFromDatabase == null) {
 					jobManagerRepository.save(job);
+					emailService.sendJobEmail(job);
 				} else {
 					jobFromDatabase.setLastUpdated(null);
 					jobManagerRepository.save(jobFromDatabase);

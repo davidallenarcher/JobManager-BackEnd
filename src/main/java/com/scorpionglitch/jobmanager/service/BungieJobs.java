@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.scorpionglitch.jobmanager.component.EmailService;
 import com.scorpionglitch.jobmanager.model.Job;
 import com.scorpionglitch.jobmanager.repository.JobManagerRepository;
 
@@ -21,6 +22,9 @@ import de.vogella.rss.read.RSSFeedParser;
 @Service
 @Configurable
 public class BungieJobs {
+	@Autowired
+	EmailService emailService;
+	
 	Logger logger = LoggerFactory.getLogger(BungieJobs.class);
 
 	@Autowired
@@ -100,6 +104,7 @@ public class BungieJobs {
 
 			if (jobFromDatabase == null) {
 				jobManagerRepository.save(job);
+				emailService.sendJobEmail(job);
 			} else {
 				jobFromDatabase.setLastUpdated(null);
 				jobManagerRepository.save(jobFromDatabase);

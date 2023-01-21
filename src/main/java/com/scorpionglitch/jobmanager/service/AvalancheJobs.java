@@ -1,6 +1,8 @@
 package com.scorpionglitch.jobmanager.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +11,11 @@ import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,6 +24,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.scorpionglitch.jobmanager.LoggingRequestInterceptor;
+import com.scorpionglitch.jobmanager.component.EmailService;
 import com.scorpionglitch.jobmanager.model.Job;
 import com.scorpionglitch.jobmanager.repository.JobManagerRepository;
 
@@ -30,6 +38,8 @@ import lombok.ToString;
 @Service
 @Configurable
 public class AvalancheJobs {
+	@Autowired
+	EmailService emailService;
 
 	@Autowired
 	JobManagerRepository jobManagerRepository;
@@ -50,8 +60,16 @@ public class AvalancheJobs {
 		headers.set("Authorization", "Token token=81eHATtJI0ByQcGqJbwhQvsqRYH3iIv-XSIAd0MC");
 		headers.set("host", "api.teamtailor.com");
 		headers.set("X-Api-Version", "20161108");
+		headers.setContentType(MediaType.APPLICATION_JSON);
 
 		entity = new HttpEntity<String>("body", headers);
+//*		
+		ClientHttpRequestInterceptor ri = new LoggingRequestInterceptor();
+		List<ClientHttpRequestInterceptor> ris = new ArrayList<ClientHttpRequestInterceptor>();
+		ris.add(ri);
+		template.setInterceptors(ris);
+		template.setRequestFactory(new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory()));
+//*/
 	}
 
 	@NoArgsConstructor
@@ -278,6 +296,7 @@ public class AvalancheJobs {
 
 								if (jobFromDatabase == null) {
 									jobManagerRepository.save(job);
+									emailService.sendJobEmail(job);
 								} else {
 									jobFromDatabase.setLastUpdated(null);
 									jobManagerRepository.save(jobFromDatabase);
@@ -296,6 +315,7 @@ public class AvalancheJobs {
 			}
 
 		} catch (HttpClientErrorException hcee) {
+			//logger.warn(hcee.getResponseBodyAsString());
 			hcee.printStackTrace();
 		} catch (RestClientException e) {
 			e.printStackTrace();
@@ -312,5 +332,22 @@ public class AvalancheJobs {
 		long end = System.currentTimeMillis();
 
 		logger.info("Updated by \"{}\": {}", Thread.currentThread().getName(), (end - start));
+	}
+	
+	public static void main(String[] args) {
+		HttpHeaders headers = new HttpHeaders();
+
+		headers.set("Accept", "application/vnd.api+json");
+		headers.set("Authorization", "Token token=81eHATtJI0ByQcGqJbwhQvsqRYH3iIv-XSIAd0MC");
+		headers.set("host", "api.teamtailor.com");
+		headers.set("X-Api-Version", "20161108");
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<String> entity = new HttpEntity<String>("body", headers);
+		
+		RestTemplate template = new RestTemplate();
+		
+		template.exchange("https://api.teamtailor.com/v1/jobs?include=department,location,locations&location[id]=87297&page[size]=30&page[number]=1", HttpMethod.GET,
+				entity, AvalanchePage.class);
 	}
 }
