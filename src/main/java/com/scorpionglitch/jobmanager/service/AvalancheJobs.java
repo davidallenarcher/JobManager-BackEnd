@@ -322,7 +322,7 @@ public class AvalancheJobs {
 		}
 	}
 
-	@Scheduled(fixedDelay = 5L * 60L * 1000L)
+	@Scheduled(fixedDelay = 5L * 60L * 1000L, initialDelay = 0 * 1000L)
 	@Async
 	public void updateJobs() {
 		long start = System.currentTimeMillis();

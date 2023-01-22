@@ -27,3 +27,8 @@ logging:
           client:
             RestTemplate: DEBUG
 #            RestTemplate: INFO
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

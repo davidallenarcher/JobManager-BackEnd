@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.client.RestTemplate;
 
 @EnableScheduling
 @SpringBootApplication
@@ -16,25 +17,9 @@ public class JobManagerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(JobManagerApplication.class, args);
 	}
-
-	/*
-	@Bean
-	CommandLineRunner run(JobManagerRepository jobRepository) {
-		return (args -> {
-			System.out.println("Number of jobs in repository: " + jobRepository.count());
-		});
-	}
 	
 	@Bean
-	CommandLineRunner printConfiguration() {
-		return (args -> {
-			// stuff to run on start
-		});
-	}
-	//*/
-	
-	@Bean
-	public JavaMailSender getJavaMailSender() {
+	JavaMailSender getJavaMailSender() {
 		JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 		mailSender.setHost("smtp.gmail.com");
 		mailSender.setPort(587);

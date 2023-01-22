@@ -159,7 +159,7 @@ public class TakeTwoJobs {
 		logger.info("Updated by \"{}\": {}", Thread.currentThread().getName(), (end - start));
 	}
 
-	@Scheduled(fixedDelay = 5L * 60L * 1000L)
+	@Scheduled(fixedDelay = 5L * 60L * 1000L, initialDelay = 5 * 1000L)
 	@Async
 	public void updateJobs() {
 		updateJobs(locationNewYork);

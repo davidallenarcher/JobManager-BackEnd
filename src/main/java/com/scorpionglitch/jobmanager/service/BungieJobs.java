@@ -84,7 +84,7 @@ public class BungieJobs {
 		return LocalDateTime.of(year, month, dayOfMonth, hour, minute);
 	}
 
-	@Scheduled(fixedDelay = 5L * 60L * 1000L)
+	@Scheduled(fixedDelay = 5L * 60L * 1000L, initialDelay = 5 * 1000L)
 	@Async
 	public void updateJobs() {
 		long start = System.currentTimeMillis();
