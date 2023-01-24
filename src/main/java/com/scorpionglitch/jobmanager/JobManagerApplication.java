@@ -2,18 +2,21 @@ package com.scorpionglitch.jobmanager;
 
 import java.util.Properties;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.client.RestTemplate;
 
 @EnableScheduling
 @SpringBootApplication
 public class JobManagerApplication {
 
+	@Value("${testvalue}")
+	private String testvalue;
+	
 	public static void main(String[] args) {
 		SpringApplication.run(JobManagerApplication.class, args);
 	}

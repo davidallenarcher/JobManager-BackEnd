@@ -1,5 +1,7 @@
 package com.scorpionglitch.jobmanager.component;
 
+import java.util.ArrayList;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,6 +14,8 @@ public class EmailServiceImpl implements EmailService {
 
 	@Autowired
 	private JavaMailSender javaMailSender;
+	
+	private ArrayList<Job> jobs;
 	
 	@Override
 	public String sendSimpleEmail(EmailDetails details) {

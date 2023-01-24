@@ -1,3 +1,5 @@
+testvalue: testvalue
+
 spring:
   datasource:
     #url: jdbc:h2:mem:mydb
@@ -19,16 +21,19 @@ spring:
 server:
   servlet:
     context-path: /api
+  compression:
+    enabled: true
 logging:
   level:
     org:
       springframework:
         web:
           client:
-            RestTemplate: DEBUG
-#            RestTemplate: INFO
+#            RestTemplate: DEBUG
+            RestTemplate: INFO
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+        
