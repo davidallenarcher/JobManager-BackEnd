@@ -1,6 +1,9 @@
 package com.scorpionglitch.jobmanager.service;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,137 +14,70 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.UnknownContentTypeException;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.scorpionglitch.jobmanager.component.EmailService;
 import com.scorpionglitch.jobmanager.model.Job;
 import com.scorpionglitch.jobmanager.repository.JobManagerRepository;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
 
 @Service
 @Configurable
 public class TakeTwoJobs {
+	private static final String NAME = "TakeTwo";
+	private static final Logger LOGGER = LoggerFactory.getLogger(TakeTwoJobs.class);
+	private static final RestTemplate TEMPLATE = new RestTemplate();
+	private static final String OFFICES_URL_ADDRESS = "https://boards-api.greenhouse.io/v1/boards/taketwo/offices/";
+	private static final String JOB_URL_ADDRESS = "https://boards-api.greenhouse.io/v1/boards/taketwo/jobs/";
+
+	private static final String LOCATION_NEW_YORK = "48422";
+	private static final String LOCATION_REMOTE = "83926";
+
 	@Autowired
-	EmailService emailService;
-	
+	private EmailService emailService;
+
 	@Autowired
-	JobManagerRepository jobManagerRepository;
+	private JobManagerRepository jobManagerRepository;
 
-	private Logger logger = LoggerFactory.getLogger(TakeTwoJobs.class);
-
-	private RestTemplate template = new RestTemplate();
-
-	private static final String urlAddress = "https://boards-api.greenhouse.io/v1/boards/taketwo/offices/";
-	private static final String locationNewYork = "48422";
-	private static final String locationRemote = "83926";
-
-	private static final String name = "TakeTwo";
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class TakeTwoJob {
-		@Getter
-		@Setter
-		String absolute_url;
-
-		@Getter
-		@Setter
-		String updated_at;
-
-		@Getter
-		@Setter
-		String title;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class TakeTwoDepartment {
-		@Getter
-		@Setter
-		Long id;
-
-		@Getter
-		@Setter
-		String name;
-
-		@Getter
-		@Setter
-		Long parent_id;
-
-		@Getter
-		@Setter
-		Long[] child_ids;
-
-		@Getter
-		@Setter
-		TakeTwoJob[] jobs;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class TakeTwoJobsResponse {
-		@Getter
-		@Setter
-		Long id;
-
-		@Getter
-		@Setter
-		String name;
-
-		@Getter
-		@Setter
-		String location;
-
-		@Getter
-		@Setter
-		Long parent_id;
-
-		@Getter
-		@Setter
-		Long[] child_ids;
-
-		@Getter
-		@Setter
-		TakeTwoDepartment[] departments;
-	}
-
-	private LocalDateTime getAsLocalDateTime(String pubDate) {
-		int year = Integer.parseInt(pubDate.substring(0, 4));
-		int dayOfMonth = Integer.parseInt(pubDate.substring(8, 10));
-		int month = Integer.parseInt(pubDate.substring(5, 7));
-		int hour = Integer.parseInt(pubDate.substring(11, 13));
-		int minute = Integer.parseInt(pubDate.substring(14, 16));
-
-		return LocalDateTime.of(year, month, dayOfMonth, hour, minute);
+	private String getDesciption(long id) {
+		String description = null;
+		try {
+			URI uri = new URI(JOB_URL_ADDRESS + id);
+			TakeTwoJob takeTwoJob = TEMPLATE.getForObject(uri, TakeTwoJob.class);
+			description = takeTwoJob.getContent();
+		} catch (URISyntaxException urise) {
+			urise.printStackTrace();
+		} catch (UnknownContentTypeException ucte) {
+			ucte.printStackTrace();
+		} catch (NullPointerException npe) {
+			npe.printStackTrace();
+		}
+		return description;
 	}
 
 	private void updateJobs(String location) {
-		long start = System.currentTimeMillis();
 		try {
-			TakeTwoJobsResponse takeTwoJobsResponse = template.getForObject(urlAddress + location, TakeTwoJobsResponse.class);
+			TakeTwoJobsResponse takeTwoJobsResponse = TEMPLATE.getForObject(OFFICES_URL_ADDRESS + location,
+					TakeTwoJobsResponse.class);
 			if (takeTwoJobsResponse != null && takeTwoJobsResponse.departments != null) {
 				for (TakeTwoDepartment department : takeTwoJobsResponse.departments) {
 					if (department != null && department.jobs != null) {
 						for (TakeTwoJob takeTwoJob : department.jobs) {
 							Job job = new Job();
-							job.setSource(name);
+							job.setSource(NAME);
 							job.setTitle(takeTwoJob.getTitle());
-							job.setLinkAddress(takeTwoJob.getAbsolute_url());
-							job.setPublishedDate(getAsLocalDateTime(takeTwoJob.updated_at));
-
+							job.setLinkAddress(takeTwoJob.getAbsoluteUrl());
+							job.setPublishedDate(LocalDateTime.parse(takeTwoJob.getUpdatedAt(),
+									DateTimeFormatter.ISO_OFFSET_DATE_TIME));
 							Job jobFromDatabase = jobManagerRepository.findByLinkAddress(job.getLinkAddress());
 							if (jobFromDatabase == null) {
+								job.setDescription(getDesciption(takeTwoJob.getId()));
 								jobManagerRepository.save(job);
 								emailService.sendJobEmail(job);
 							} else {
-								jobFromDatabase.setLastUpdated(null);
+								jobFromDatabase.setLastSeen(LocalDateTime.now());
 								jobManagerRepository.save(jobFromDatabase);
 							}
 						}
@@ -155,15 +91,36 @@ public class TakeTwoJobs {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		long end = System.currentTimeMillis();
-		logger.info("Updated by \"{}\": {}", Thread.currentThread().getName(), (end - start));
 	}
 
-	@Scheduled(fixedDelay = 5L * 60L * 1000L, initialDelay = 5 * 1000L)
+	@Scheduled(fixedDelay = 5L * 60L * 1000L, initialDelay = 0 * 1000L)
 	@Async
 	public void updateJobs() {
-		updateJobs(locationNewYork);
-		updateJobs(locationRemote);
+		long start = System.currentTimeMillis();
+		updateJobs(LOCATION_NEW_YORK);
+		updateJobs(LOCATION_REMOTE);
+		long end = System.currentTimeMillis();
+		LOGGER.debug("Updated by \"{}\": {}", Thread.currentThread().getName(), (end - start));
 	}
 
+	@Data
+	private static class TakeTwoJob {
+		private Long id;
+		@JsonProperty(value = "absolute_url")
+		private String absoluteUrl;
+		@JsonProperty(value = "updated_at")
+		private String updatedAt;
+		private String title;
+		private String content;
+	}
+
+	@Data
+	private static class TakeTwoDepartment {
+		private TakeTwoJob[] jobs;
+	}
+
+	@Data
+	private static class TakeTwoJobsResponse {
+		private TakeTwoDepartment[] departments;
+	}
 }

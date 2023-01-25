@@ -1,8 +1,7 @@
 package com.scorpionglitch.jobmanager.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +12,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.BufferingClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -24,258 +20,38 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.scorpionglitch.jobmanager.LoggingRequestInterceptor;
 import com.scorpionglitch.jobmanager.component.EmailService;
 import com.scorpionglitch.jobmanager.model.Job;
 import com.scorpionglitch.jobmanager.repository.JobManagerRepository;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
 
 @Service
 @Configurable
 public class AvalancheJobs {
-	@Autowired
-	EmailService emailService;
-
-	@Autowired
-	JobManagerRepository jobManagerRepository;
-
-	// ring avalancheAPI =
-	// "https://api.teamtailor.com/v1/jobs?include=department,location,locations&page[size]=30&page[number]=";
-	String avalancheAPI = "https://api.teamtailor.com/v1/jobs?include=department,location,locations&location[id]=87297&page[size]=30&page[number]=";
-
-	Logger logger = LoggerFactory.getLogger(AvalancheJobs.class);
-
-	HttpHeaders headers;
-	HttpEntity<String> entity;
-
-	public AvalancheJobs() {
-		headers = new HttpHeaders();
-
+	private static final String API_ADDRESS = "https://api.teamtailor.com/v1/jobs?include=department,location,locations&location[id]=87297&page[size]=30&page[number]=";
+	private static final String NAME = "Avalanche";
+	private static final Logger logger = LoggerFactory.getLogger(AvalancheJobs.class);
+	private static final HttpEntity<String> entity; 
+	static {
+		HttpHeaders headers = new HttpHeaders();
 		headers.set("Accept", "application/vnd.api+json");
 		headers.set("Authorization", "Token token=81eHATtJI0ByQcGqJbwhQvsqRYH3iIv-XSIAd0MC");
 		headers.set("host", "api.teamtailor.com");
 		headers.set("X-Api-Version", "20161108");
 		headers.setContentType(MediaType.APPLICATION_JSON);
-
 		entity = new HttpEntity<String>("body", headers);
-//*		
-		ClientHttpRequestInterceptor ri = new LoggingRequestInterceptor();
-		List<ClientHttpRequestInterceptor> ris = new ArrayList<ClientHttpRequestInterceptor>();
-		ris.add(ri);
-		template.setInterceptors(ris);
-		template.setRequestFactory(new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory()));
-//*/
 	}
+	private static RestTemplate template = new RestTemplate();
 
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheMeta {
-		@Getter
-		@Setter
-		private Object texts;
-
-		@Getter
-		@Setter
-		@JsonProperty(value = "record-count")
-		private int recordCount;
-
-		@Getter
-		@Setter
-		@JsonProperty(value = "page-count")
-		private int pageCount;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJobLinks {
-		@Getter
-		@Setter
-		@JsonProperty(value = "careersite-job-url")
-		private String careersiteJobURL;
-
-		@Getter
-		@Setter
-		@JsonProperty(value = "careersite-job-apply-url")
-		private String careersiteJobApplyURL;
-
-		@Getter
-		@Setter
-		@JsonProperty(value = "careersite-job-apply-iframe-url")
-		private String careersiteJobApplyIFrameURL;
-
-		@Getter
-		@Setter
-		private String self;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJobRelationshipsLocationsLinks {
-		@Getter
-		@Setter
-		private String self;
-
-		@Getter
-		@Setter
-		private String related;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJobRelationshipsLocationsData {
-		@Getter
-		@Setter
-		private String type;
-
-		@Getter
-		@Setter
-		private String id;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJobRelationshipsLocations {
-		@Getter
-		@Setter
-		private AvalancheJobRelationshipsLocationsLinks links;
-
-		@Getter
-		@Setter
-		private AvalancheJobRelationshipsLocationsData[] data;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJobRelationships {
-		@Getter
-		@Setter
-		private AvalancheJobRelationshipsLocations locations;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJobAttributes {
-		@Getter
-		@Setter
-		private String title;
-
-		@Getter
-		@Setter
-		private String pitch;
-
-		@Getter
-		@Setter
-		@JsonProperty(value = "updated-at")
-		private String updatedAt;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalancheJob {
-		@Getter
-		@Setter
-		private long id;
-
-		@Getter
-		@Setter
-		private String type;
-
-		@Getter
-		@Setter
-		private AvalancheJobLinks links;
-
-		@Getter
-		@Setter
-		private AvalancheJobAttributes attributes;
-
-		@Getter
-		@Setter
-		private AvalancheJobRelationships relationships;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalanceIncluded {
-		@Getter
-		@Setter
-		private long id;
-
-		@Getter
-		@Setter
-		private String type;
-
-		@Getter
-		@Setter
-		private Object links;
-
-		@Getter
-		@Setter
-		private Object attributes;
-
-		@Getter
-		@Setter
-		private Object relationships;
-	}
-
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@ToString
-	private static class AvalanchePage {
-		@Getter
-		@Setter
-		private AvalancheJob[] data;
-
-		@Getter
-		@Setter
-		private AvalanceIncluded[] included;
-
-		@Getter
-		@Setter
-		private AvalancheMeta meta;
-
-		@Getter
-		@Setter
-		private AvalancheJobLinks links;
-	}
-
-//	@Autowired
-	private RestTemplate template = new RestTemplate();
-
-	public String getName() {
-		return "Avalanche";
-	}
-
-	public String getType() {
-		return "API";
-	}
-
-	private LocalDateTime getAsLocalDateTime(String pubDate) {
-		int year = Integer.parseInt(pubDate.substring(0, 4));
-		int dayOfMonth = Integer.parseInt(pubDate.substring(8, 10));
-		int month = Integer.parseInt(pubDate.substring(5, 7));
-		int hour = Integer.parseInt(pubDate.substring(11, 13));
-		int minute = Integer.parseInt(pubDate.substring(14, 16));
-
-		return LocalDateTime.of(year, month, dayOfMonth, hour, minute);
-	}
+	@Autowired
+	private EmailService emailService;
+	@Autowired
+	private JobManagerRepository jobManagerRepository;
 
 	private void getJobs(int page) {
 		try {
-			ResponseEntity<AvalanchePage> avalanchePageRE = template.exchange(avalancheAPI + page, HttpMethod.GET,
+			ResponseEntity<AvalanchePage> avalanchePageRE = template.exchange(API_ADDRESS + page, HttpMethod.GET,
 					entity, AvalanchePage.class);
 
 			if (avalanchePageRE.hasBody()) {
@@ -286,19 +62,18 @@ public class AvalancheJobs {
 						if (location.id.compareTo("87297") == 0) {
 							try {
 								Job job = new Job();
-								job.setSource(getName());
+								job.setSource(NAME);
 								job.setTitle(avalancheJob.getAttributes().getTitle());
 								job.setLinkAddress(avalancheJob.links.careersiteJobURL);
-								job.setPublishedDate(getAsLocalDateTime(avalancheJob.attributes.updatedAt));
+								job.setPublishedDate(LocalDateTime.parse(avalancheJob.getAttributes().getUpdatedAt(),
+										DateTimeFormatter.ISO_OFFSET_DATE_TIME));
 								job.setDescription(avalancheJob.attributes.getPitch());
-
 								Job jobFromDatabase = jobManagerRepository.findByLinkAddress(job.getLinkAddress());
-
 								if (jobFromDatabase == null) {
 									jobManagerRepository.save(job);
 									emailService.sendJobEmail(job);
 								} else {
-									jobFromDatabase.setLastUpdated(null);
+									jobFromDatabase.setLastSeen(LocalDateTime.now());
 									jobManagerRepository.save(jobFromDatabase);
 								}
 
@@ -315,9 +90,10 @@ public class AvalancheJobs {
 			}
 
 		} catch (HttpClientErrorException hcee) {
-			//logger.warn(hcee.getResponseBodyAsString());
+			logger.error(hcee.toString());
 			hcee.printStackTrace();
 		} catch (RestClientException e) {
+			logger.error(e.toString());
 			e.printStackTrace();
 		}
 	}
@@ -326,28 +102,57 @@ public class AvalancheJobs {
 	@Async
 	public void updateJobs() {
 		long start = System.currentTimeMillis();
-
 		getJobs(1);
-
 		long end = System.currentTimeMillis();
-
-		logger.info("Updated by \"{}\": {}", Thread.currentThread().getName(), (end - start));
+		logger.debug("Updated by \"{}\": {}", Thread.currentThread().getName(), (end - start));
 	}
 	
-	public static void main(String[] args) {
-		HttpHeaders headers = new HttpHeaders();
+	@Data
+	private static class AvalancheMeta {
+		private Object texts;
+		@JsonProperty(value = "page-count")
+		private int pageCount;
+	}
 
-		headers.set("Accept", "application/vnd.api+json");
-		headers.set("Authorization", "Token token=81eHATtJI0ByQcGqJbwhQvsqRYH3iIv-XSIAd0MC");
-		headers.set("host", "api.teamtailor.com");
-		headers.set("X-Api-Version", "20161108");
-		headers.setContentType(MediaType.APPLICATION_JSON);
+	@Data
+	private static class AvalancheJobLinks {
+		@JsonProperty(value = "careersite-job-url")
+		private String careersiteJobURL;
+	}
 
-		HttpEntity<String> entity = new HttpEntity<String>("body", headers);
-		
-		RestTemplate template = new RestTemplate();
-		
-		template.exchange("https://api.teamtailor.com/v1/jobs?include=department,location,locations&location[id]=87297&page[size]=30&page[number]=1", HttpMethod.GET,
-				entity, AvalanchePage.class);
+	@Data
+	private static class AvalancheJobRelationshipsLocationsData {
+		private String id;
+	}
+
+	@Data
+	private static class AvalancheJobRelationshipsLocations {
+		private AvalancheJobRelationshipsLocationsData[] data;
+	}
+
+	@Data
+	private static class AvalancheJobRelationships {
+		private AvalancheJobRelationshipsLocations locations;
+	}
+
+	@Data
+	private static class AvalancheJobAttributes {
+		private String title;
+		private String pitch;
+		@JsonProperty(value = "updated-at")
+		private String updatedAt;
+	}
+
+	@Data
+	private static class AvalancheJob {
+		private AvalancheJobLinks links;
+		private AvalancheJobAttributes attributes;
+		private AvalancheJobRelationships relationships;
+	}
+
+	@Data
+	private static class AvalanchePage {
+		private AvalancheJob[] data;
+		private AvalancheMeta meta;
 	}
 }

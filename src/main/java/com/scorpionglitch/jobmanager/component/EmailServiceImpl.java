@@ -1,7 +1,5 @@
 package com.scorpionglitch.jobmanager.component;
 
-import java.util.ArrayList;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -15,32 +13,12 @@ public class EmailServiceImpl implements EmailService {
 	@Autowired
 	private JavaMailSender javaMailSender;
 	
-	private ArrayList<Job> jobs;
-	
-	@Override
-	public String sendSimpleEmail(EmailDetails details) {
-		try {
-			SimpleMailMessage mailMessage = new SimpleMailMessage();
-			mailMessage.setFrom("David.Allen.Archer@gmail.com");
-			mailMessage.setTo(details.getRecipient());
-			mailMessage.setText(details.getMessageBody());
-			mailMessage.setSubject(details.getSubject());
-			
-			javaMailSender.send(mailMessage);
-			return "Mail Sent Successfully..";
-		} catch (Exception e) {
-			return "Error While Sending Mail";
-		}
-	}
-
-	@Override
-	public String sendMailWithAttachment(EmailDetails details) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	@Override
 	public String sendJobEmail(Job job) {
+		// TODO cache jobs and send in bulk
+		if (job != null)
+			return null;
+		
 		try {
 			SimpleMailMessage mailMessage = new SimpleMailMessage();
 			mailMessage.setFrom("David.Allen.Archer@gmail.com");

@@ -18,6 +18,10 @@ spring:
         web-allow-others: true
       path: /h2-console
       enabled: true
+  mail:
+    properties:
+      mail:
+        debug: false
 server:
   servlet:
     context-path: /api
@@ -29,8 +33,11 @@ logging:
       springframework:
         web:
           client:
-#            RestTemplate: DEBUG
-            RestTemplate: INFO
+            RestTemplate: WARN
+        mail:
+          javamail:
+            JavaMailSender: WARN
+            
 management:
   endpoints:
     web:

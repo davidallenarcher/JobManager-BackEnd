@@ -1,5 +1,7 @@
 package com.scorpionglitch.jobmanager.service;
 
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +37,7 @@ public class JobManagerService {
 		Job dataBaseJob = jobManagerRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Job not found for this id :: " + id));
 		dataBaseJob.setJobStatus(job.getJobStatus());
-		dataBaseJob.setLastUpdated(null);
+		dataBaseJob.setLastUpdated(LocalDateTime.now());
 		final Job updatedJob = jobManagerRepository.save(dataBaseJob);
 		return ResponseEntity.ok().body(updatedJob);
 	}
@@ -44,7 +46,7 @@ public class JobManagerService {
 		Job dataBaseJob = jobManagerRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Job not found for this id :: " + id));
 		dataBaseJob.setNotes(job.getNotes());
-		dataBaseJob.setLastUpdated(null);
+		dataBaseJob.setLastUpdated(LocalDateTime.now());
 		final Job updatedJob = jobManagerRepository.save(dataBaseJob);
 		return ResponseEntity.ok().body(updatedJob);
 	}
