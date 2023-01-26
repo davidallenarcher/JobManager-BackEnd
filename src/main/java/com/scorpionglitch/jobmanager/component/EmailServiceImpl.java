@@ -15,10 +15,6 @@ public class EmailServiceImpl implements EmailService {
 	
 	@Override
 	public String sendJobEmail(Job job) {
-		// TODO cache jobs and send in bulk
-		if (job != null)
-			return null;
-		
 		try {
 			SimpleMailMessage mailMessage = new SimpleMailMessage();
 			mailMessage.setFrom("David.Allen.Archer@gmail.com");

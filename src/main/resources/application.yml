@@ -33,7 +33,7 @@ logging:
       springframework:
         web:
           client:
-            RestTemplate: WARN
+            RestTemplate: DEBUG
         mail:
           javamail:
             JavaMailSender: WARN
