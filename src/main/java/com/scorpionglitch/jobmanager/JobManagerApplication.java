@@ -17,24 +17,29 @@ public class JobManagerApplication {
 	@Value("${testvalue}")
 	private String testvalue;
 	
+	private JavaMailSenderImpl mailSender;
+	
 	public static void main(String[] args) {
 		SpringApplication.run(JobManagerApplication.class, args);
 	}
 	
 	@Bean
-	JavaMailSender getJavaMailSender() {
-		JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-		mailSender.setHost("smtp.gmail.com");
-		mailSender.setPort(587);
-		mailSender.setUsername("David.Allen.Archer@gmail.com");
-		mailSender.setPassword(System.getenv("encryption"));
+	synchronized JavaMailSender getJavaMailSender() {
+		if (mailSender == null) {
+			mailSender = new JavaMailSenderImpl();
+			
+			mailSender.setHost("smtp.gmail.com");
+		    mailSender.setPort(587);
+		    mailSender.setUsername("David.Allen.Archer@gmail.com");
+		    mailSender.setPassword(System.getenv("encryption"));
+		    
+		    Properties properties = mailSender.getJavaMailProperties();
+		    properties.put("mail.transport.protocol", "smtp");
+			properties.put("mail.smtp.auth", "true");
+			properties.put("mail.smtp.starttls.enable", "true");
+			properties.put("mail.debug", "true");
+		}
 		
-		Properties properties = mailSender.getJavaMailProperties();
-		properties.put("mail.transport.protocol", "smtp");
-	    properties.put("mail.smtp.auth", "true");
-	    properties.put("mail.smtp.starttls.enable", "true");
-	    properties.put("mail.debug", "true");
-	    
-	    return mailSender;
+		return mailSender;
 	}
 }

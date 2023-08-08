@@ -19,24 +19,35 @@ spring:
       path: /h2-console
       enabled: true
   mail:
+    host: smtp.gmail.com
+    username: David.Allen.Archer@gmail.com
+    password: ${encryption}
     properties:
       mail:
-        debug: false
+        transport:
+          protocol: smtp
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        debug: true
 server:
+  port: 8081
   servlet:
     context-path: /api
   compression:
     enabled: true
+    
 logging:
   level:
     org:
       springframework:
         web:
           client:
-            RestTemplate: DEBUG
+            RestTemplate: INFO
         mail:
           javamail:
-            JavaMailSender: WARN
+            JavaMailSender: ERROR
             
 management:
   endpoints:
